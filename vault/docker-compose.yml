@@ -1,0 +1,43 @@
+version: "3.9"
+services:
+  vault:
+    cap_add:
+      - IPC_LOCK
+    #image: vault:latest
+    build: .
+    container_name: vault
+    hostname: vault
+    ports:
+      - "8200:8200"
+    volumes:
+      -  ./data:/vault/file
+      -  ./config:/vault/config
+    #entrypoint: ["vault","server","-config","/vault/config/config.hcl"]
+    entrypoint: ["vault","server","-config","/vault/config/config-with-consul.hcl"]
+    depends_on:
+      - consul
+    networks:
+      vault-network:
+        ipv4_address: 172.21.0.10
+        aliases:
+          - vault-server
+
+  consul:
+    image: consul:latest
+    container_name: consul
+    hostname: consul
+    volumes:
+      -  ./consul-data:/consul/data
+      -  ./config:/consul/config
+    entrypoint: ["consul","agent","-config-file","/consul/config/consul-config.json"]
+    networks:
+      vault-network:
+        ipv4_address: 172.21.0.20
+        aliases:
+          - consul-server
+
+networks:
+  vault-network:
+    ipam:
+      config:
+        - subnet: 172.21.0.0/24
